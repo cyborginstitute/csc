@@ -12,7 +12,7 @@ from docutils.core import publish_parts
 import jinja2
 import yaml
 import os.path
-import sys
+import argparse
 
 def render_rst(filename, input):
     output = {}
@@ -66,14 +66,22 @@ def parse_file(filename, divider='---'):
     return {'meta': meta, 'body': body }
 
 class CscPage(object):
-    def __init__(self, input_file, output_file):
-        self.filename = input_file
-        self.output_arg = output_file
-        self.data = parse_file(self.filename)
+    def __init__(self, input_file, output_file, build_arg=None, meta_arg=None):
+        self.arg = {
+            'filename': input_file,
+            'output': output_file,
+            'build': build_arg,
+            'meta': meta_arg,
+            }
+
+        self.filename = self.arg['filename']
         self.filename_base = ''.join(self.filename.split('.', -1)[:-1])
+
+        self.data = parse_file(self.filename)
         self.document = parse_document(self.filename, self.data['body'], self.data['meta'])
         self.template = self.get_template()
-        self.output = self.get_output()
+        self.output = self.get_setting('output')
+        self.builddir = self.get_setting('build')
 
     def get_template(self):
         corresponding_template = self.filename_base + '.tmpl'
@@ -87,15 +95,15 @@ class CscPage(object):
 
         return template
 
-    def get_output(self):
-        if 'output' in self.data:
-            output = self.data['meta']['output']
-        elif self.output_arg is not None:
-            output = self.output_arg
+    def get_setting(self, arg):
+        if arg in self.data['meta']:
+            r = self.data['meta'][arg]
+        elif self.arg[arg] is not None:
+            r = self.arg[arg]
         else:
-            output = self.filename_base + '.html'
+            r = foo
 
-        return output
+        return r
 
     def render(self):
         options = {}
@@ -122,27 +130,23 @@ class CscPage(object):
         f.close
 
 def csc_cmd_line_interface():
-    num_args = len(sys.argv)
+    parser = argparse.ArgumentParser(description='Compile a page.')
 
-    if num_args > 3:
-        exit("Too many arguments.")
-    elif num_args is 0:
-        exit("Not enough arguments.")
-    elif num_args is 1:
-        input_file = sys.argv[1]
-        output_file = None
-    else:
-        input_file = sys.argv[1]
-        output_file = sys.argv[2]
+    parser.add_argument('--builddir', '-b', default="build/", help='Build ouptut directory.')
+    parser.add_argument('--metadir', '-m', default="build/meta/", help='Build metadata directory.')
+    parser.add_argument('input', nargs='?', help='specify input file.' )
+    parser.add_argument('output', nargs='?', default=None, help='specify output output.' )
 
-    return input_file, output_file
+    return parser.parse_args()
 
 def main():
-    input_file, output_file = csc_cmd_line_interface()
-    source = CscPage(input_file, output_file)
+    interface = csc_cmd_line_interface()
 
+    source = CscPage(interface.input, interface.output, interface.builddir, interface.metadir)
     source.render()
     source.dump_metadata()
+
+    print('[csc] building "' + interface.input + '" into "' + source.output + '"')
 
 if __name__ == '__main__':
     main()
