@@ -14,6 +14,9 @@ import yaml
 import os.path
 import argparse
 
+DEFAULT_TEMPLATE = 'detail.tmpl'
+DEFAULT_BUILDDIR = 'build/'
+
 def render_rst(filename, input):
     output = {}
     overrides = {'doctitle_xform': True,
@@ -35,11 +38,12 @@ def render_rst(filename, input):
 
 def parse_document(filename, input, meta=None):
     output = {}
+
     if meta is None:
         meta = {}
-
-    for key in meta:
-        output[key] = meta[key]
+    else:
+        for key in meta:
+            output[key] = meta[key]
 
     rst_output = render_rst(filename, input)
 
@@ -54,54 +58,57 @@ def parse_document(filename, input, meta=None):
     return output
 
 def parse_file(filename, divider='---'):
-    stream = open(filename, 'r').read().split(divider, 2)
-    meta = None
+    stream = open(filename, 'r').read()
+    split_stream = stream.split(divider, 2)
 
-    for segment in stream:
-        try:
-            meta = yaml.load(segment)
-        except ( yaml.scanner.ScannerError, SyntaxError ):
-            body = segment
-
-    return {'meta': meta, 'body': body }
+    if split_stream[0] == '':
+        return { 'meta': yaml.load(split_stream[1]), 'body': split_stream[2] }
+    else:
+        return { 'meta': None, 'body': stream }
 
 class CscPage(object):
     def __init__(self, input_file, output_file, build_arg=None, meta_arg=None):
         self.arg = {
             'filename': input_file,
             'output': output_file,
-            'build': build_arg,
+            'builddir': build_arg,
             'meta': meta_arg,
             }
 
         self.filename = self.arg['filename']
         self.filename_base = ''.join(self.filename.split('.', -1)[:-1])
-
         self.data = parse_file(self.filename)
         self.document = parse_document(self.filename, self.data['body'], self.data['meta'])
-        self.template = self.get_template()
-        self.output = self.get_setting('output')
-        self.builddir = self.get_setting('build')
 
     def get_template(self):
         corresponding_template = self.filename_base + '.tmpl'
 
-        if 'template' in self.data['meta']:
+        if self.data['meta'] is not None and 'template' in self.data['meta']: 
             template = self.data['meta']['template']
-        if os.path.isfile(corresponding_template):
+        elif os.path.isfile(corresponding_template):
             template = corresponding_template
-        else:
-            template = 'detail.tmpl'
-
+        else: 
+            template = DEFAULT_TEMPLATE
+            
         return template
 
-    def get_setting(self, arg):
-        if arg in self.data['meta']:
-            r = self.data['meta'][arg]
-        elif self.arg[arg] is not None:
-            r = self.arg[arg]
+    def output_file(self):
+        if self.data['meta'] is not None and 'output' in self.data['meta']:
+            r = self.data['meta']['output']
+        elif self.arg['output'] is not None:
+            r = self.arg['output']
         else:
-            r = foo
+            r = self.filename_base + '.htm'
+
+        return r
+
+    def get_builddir(self):
+        if 'buildir' in self.data['meta']:
+            r = self.data['meta']['builddir']
+        elif self.arg['builddir'] is not None:
+            r = self.arg['builddir']
+        else:
+            r = DEFAULT_BUILDDIR
 
         return r
 
@@ -109,9 +116,9 @@ class CscPage(object):
         options = {}
 
         env = jinja2.Environment(loader=jinja2.FileSystemLoader('./'), **options)
-        tmpl = env.get_template(self.template).render(entry=self.document).encode('UTF-8')
+        tmpl = env.get_template(self.get_template()).render(entry=self.document).encode('UTF-8')
 
-        output = open(self.output, 'w')
+        output = open(self.output_file(), 'w')
         output.write(tmpl)
         output.close()
 
@@ -119,12 +126,15 @@ class CscPage(object):
         f = open(self.filename_base + '.yaml', 'w')
 
         output = {
-            'output': self.output,
-            'template': self.template,
+            'output': self.output_file(),
+            'template': self.get_template(),
             'filename': self.filename
         }
 
-        output.update(self.data['meta'])
+        if self.data['meta'] is None: 
+            output = self.data['meta']
+        else: 
+            output.update(self.data['meta'])
 
         f.write(yaml.dump(output))
         f.close
@@ -146,7 +156,8 @@ def main():
     source.render()
     source.dump_metadata()
 
-    print('[csc] building "' + interface.input + '" into "' + source.output + '"')
+    print('[csc] built "' + interface.input + '" into "' + source.output_file() + '"')
 
 if __name__ == '__main__':
     main()
+  
