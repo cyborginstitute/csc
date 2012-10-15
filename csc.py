@@ -55,7 +55,7 @@ def parse_document(filename, input, meta=None):
 
     output['content'] = rst_output['content']
 
-    return output
+    return output, meta
 
 def parse_file(filename, divider='---'):
     stream = open(filename, 'r').read()
@@ -64,7 +64,7 @@ def parse_file(filename, divider='---'):
     if split_stream[0] == '':
         return { 'meta': yaml.load(split_stream[1]), 'body': split_stream[2] }
     else:
-        return { 'meta': None, 'body': stream }
+        return { 'body': stream }
 
 class CscPage(object):
     def __init__(self, input_file, output_file, build_arg=None, meta_arg=None):
@@ -78,22 +78,29 @@ class CscPage(object):
         self.filename = self.arg['filename']
         self.filename_base = ''.join(self.filename.split('.', -1)[:-1])
         self.data = parse_file(self.filename)
-        self.document = parse_document(self.filename, self.data['body'], self.data['meta'])
+
+        source = parse_document(self.filename, self.data['body'])
+
+        self.document = source[0]
+        self.meta = source[1]
+
+        if 'meta' in self.data:
+            self.meta.update(self.data['meta'])
 
     def get_template(self):
         corresponding_template = self.filename_base + '.tmpl'
 
-        if self.data['meta'] is not None and 'template' in self.data['meta']: 
+        if 'meta' in self.data and 'template' in self.data['meta']:
             template = self.data['meta']['template']
         elif os.path.isfile(corresponding_template):
             template = corresponding_template
-        else: 
+        else:
             template = DEFAULT_TEMPLATE
-            
+
         return template
 
     def output_file(self):
-        if self.data['meta'] is not None and 'output' in self.data['meta']:
+        if 'meta' in self.data and 'output' in self.data['meta']:
             r = self.data['meta']['output']
         elif self.arg['output'] is not None:
             r = self.arg['output']
@@ -131,10 +138,12 @@ class CscPage(object):
             'filename': self.filename
         }
 
-        if self.data['meta'] is None: 
-            output = self.data['meta']
-        else: 
+        for k, v in self.meta.iteritems():
+            output.update({k: v})
+
+        if 'meta' in self.data:
             output.update(self.data['meta'])
+            output.update({'header': True})
 
         f.write(yaml.dump(output))
         f.close
@@ -160,4 +169,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-  
