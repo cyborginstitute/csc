@@ -57,14 +57,31 @@ def parse_document(filename, input, meta=None):
 
     return output, meta
 
+def header_length(input_file, divider):
+    div_line_number = []
+    linenum = 0
+
+    for line in input_file.split():
+        linenum = linenum + 1
+        if line == divider:
+            div_line_number.append(linenum)
+
+        if len(div_line_number) == 2:
+            break
+
+    return div_line_number.pop() + 1
+
 def parse_file(filename, divider='---'):
     stream = open(filename, 'r').read()
     split_stream = stream.split(divider, 2)
 
     if split_stream[0] == '':
-        return { 'meta': yaml.load(split_stream[1]), 'body': split_stream[2] }
+        meta_doc = yaml.load(split_stream[1])
+        meta_doc.update({'header': True})
+        meta_doc.update({'doc_start': header_length(stream, divider)})
+        return { 'meta': meta_doc, 'body': split_stream[2], }
     else:
-        return { 'body': stream }
+        return { 'body': stream, 'header': None }
 
 class CscPage(object):
     def __init__(self, input_file, output_file, build_arg=None, meta_arg=None):
@@ -80,7 +97,6 @@ class CscPage(object):
         self.data = parse_file(self.filename)
 
         source = parse_document(self.filename, self.data['body'])
-
         self.document = source[0]
         self.meta = source[1]
 
@@ -154,7 +170,7 @@ def csc_cmd_line_interface():
     parser.add_argument('--builddir', '-b', default="build/", help='Build ouptut directory.')
     parser.add_argument('--metadir', '-m', default="build/meta/", help='Build metadata directory.')
     parser.add_argument('input', nargs='?', help='specify input file.' )
-    parser.add_argument('output', nargs='?', default=None, help='specify output output.' )
+    parser.add_argument('output', nargs='?', default=None, help='specify output file.' )
 
     return parser.parse_args()
 
