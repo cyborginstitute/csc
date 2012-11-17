@@ -1,12 +1,4 @@
 #!/usr/bin/python2
-"""
-TODO:
-
-  - Refactor csc_cmnd_line_interface() to be argparsy
-  - add support for specifiable build directory.
-  - add support for putting yaml files and html files seperate
-  - make it possible to dump doctrees
-"""
 
 from docutils.core import publish_parts
 import jinja2
@@ -57,31 +49,16 @@ def parse_document(filename, input, meta=None):
 
     return output, meta
 
-def header_length(input_file, divider):
-    div_line_number = []
-    linenum = 0
-
-    for line in input_file.split():
-        linenum = linenum + 1
-        if line == divider:
-            div_line_number.append(linenum)
-
-        if len(div_line_number) == 2:
-            break
-
-    return div_line_number.pop() + 1
-
 def parse_file(filename, divider='---'):
     stream = open(filename, 'r').read()
-    split_stream = stream.split(divider, 2)
+    meta_doc = yaml.load(stream.split(divider)[0])
 
-    if split_stream[0] == '':
-        meta_doc = yaml.load(split_stream[1])
-        meta_doc.update({'header': True})
-        meta_doc.update({'doc_start': header_length(stream, divider)})
-        return { 'meta': meta_doc, 'body': split_stream[2], }
-    else:
+    if isinstance(meta_doc, str): 
         return { 'body': stream, 'header': None }
+    else:
+        meta_doc.update({'doc_start': len(meta_doc) + 1 })
+        meta_doc.update({'header': True})
+        return { 'meta': meta_doc, 'body': stream.split()[1] }
 
 class CscPage(object):
     def __init__(self, input_file, output_file, build_arg=None, meta_arg=None):
@@ -141,13 +118,10 @@ class CscPage(object):
         env = jinja2.Environment(loader=jinja2.FileSystemLoader('./'), **options)
         tmpl = env.get_template(self.get_template()).render(entry=self.document).encode('UTF-8')
 
-        output = open(self.output_file(), 'w')
-        output.write(tmpl)
-        output.close()
-
+        with open(self.output_file(), 'w') as f:
+            f.write(tmpl)
+        
     def dump_metadata(self):
-        f = open(self.filename_base + '.yaml', 'w')
-
         output = {
             'output': self.output_file(),
             'template': self.get_template(),
@@ -161,10 +135,10 @@ class CscPage(object):
             output.update(self.data['meta'])
             output.update({'header': True})
 
-        f.write(yaml.dump(output))
-        f.close
+        with open(self.filename_base + '.yaml', 'w') as f:
+            f.write(yaml.dump(output))
 
-def csc_cmd_line_interface():
+def cli():
     parser = argparse.ArgumentParser(description='Compile a page.')
 
     parser.add_argument('--builddir', '-b', default="build/", help='Build ouptut directory.')
@@ -175,7 +149,7 @@ def csc_cmd_line_interface():
     return parser.parse_args()
 
 def main():
-    interface = csc_cmd_line_interface()
+    interface = cli()
 
     source = CscPage(interface.input, interface.output, interface.builddir, interface.metadir)
     source.render()
