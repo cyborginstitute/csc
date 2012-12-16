@@ -6,7 +6,8 @@ import yaml
 import os.path
 import argparse
 
-DEFAULT_TEMPLATE = 'detail.tmpl'
+DEFAULT_TEMPLATE = 'page.tmpl'
+TEMPLATE_DIR = 'tmpl/'
 DEFAULT_BUILDDIR = 'build/'
 
 def render_rst(filename, input):
@@ -51,14 +52,25 @@ def parse_document(filename, input, meta=None):
 
 def parse_file(filename, divider='---'):
     stream = open(filename, 'r').read()
-    meta_doc = yaml.load(stream.split(divider)[0])
+    output = {}
 
-    if isinstance(meta_doc, str): 
-        return { 'body': stream, 'header': None }
+    try:
+        meta_doc = yaml.load(stream.split(divider)[0])
+    except yaml.scanner.ScannerError:
+        output['header'] = False
+        output['body'] = stream
     else:
-        meta_doc.update({'doc_start': len(meta_doc) + 1 })
-        meta_doc.update({'header': True})
-        return { 'meta': meta_doc, 'body': stream.split()[1] }
+        if isinstance(meta_doc, str):
+            output['body'] = stream
+        else:
+            output['doc_start'] = len(meta_doc) + 1
+            output['header'] = True
+            output['meta'] = meta_doc
+            output['body'] = stream.split(divider)[1]
+
+    print output
+    return output
+
 
 class CscPage(object):
     def __init__(self, input_file, output_file, build_arg=None, meta_arg=None):
@@ -81,14 +93,22 @@ class CscPage(object):
             self.meta.update(self.data['meta'])
 
     def get_template(self):
-        corresponding_template = self.filename_base + '.tmpl'
+        corresponding_template0 = self.filename_base + '.tmpl'
+        corresponding_template1 = TEMPLATE_DIR + self.filename_base.rsplit('/')[1] + '.tmpl'
+        template = None
 
         if 'meta' in self.data and 'template' in self.data['meta']:
             template = self.data['meta']['template']
-        elif os.path.isfile(corresponding_template):
-            template = corresponding_template
-        else:
+        elif os.path.isfile(corresponding_template0):
+            template = corresponding_template0
+        elif os.path.isfile(corresponding_template1):
+            template = corresponding_template1
+        elif os.path.isfile(self.filename_base.rsplit('/')[0] + '/' + DEFAULT_TEMPLATE):
+            template = self.filename_base.rsplit('/')[0] + '/' + DEFAULT_TEMPLATE
+        elif os.path.isfile(DEFAULT_TEMPLATE):
             template = DEFAULT_TEMPLATE
+        else:
+            raise Exception('template does not exist.')
 
         return template
 
@@ -114,18 +134,29 @@ class CscPage(object):
 
     def render(self):
         options = {}
+        template_source = self.get_template()
 
-        env = jinja2.Environment(loader=jinja2.FileSystemLoader('./'), **options)
-        tmpl = env.get_template(self.get_template()).render(entry=self.document).encode('UTF-8')
+        tmpl_parts = template_source.rsplit('/', 1)
+
+        if len(tmpl_parts) == 2:
+            tmpl_path = tmpl_parts[0]
+            template = tmpl_parts[1]
+        else:
+            tmpl_path = './'
+            template = template_source
+
+        env = jinja2.Environment(loader=jinja2.FileSystemLoader(tmpl_path), **options)
+        tmpl = env.get_template(template).render(entry=self.document).encode('UTF-8')
 
         with open(self.output_file(), 'w') as f:
             f.write(tmpl)
-        
+
     def dump_metadata(self):
         output = {
             'output': self.output_file(),
             'template': self.get_template(),
-            'filename': self.filename
+            'filename': self.filename,
+            'type': 'page'
         }
 
         for k, v in self.meta.iteritems():

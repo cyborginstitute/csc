@@ -30,7 +30,7 @@ def get_output_file(name, input_file):
         return name
 
 def get_content(pagedef):
-    if pagedef['type'] == 'archive': 
+    if pagedef['type'] == 'archive':
         return render(pagedef, agg.render_content(pagedef['pages'], output_type='archive'))
     elif pagedef['type'] == 'generate':
         return gen.render_aggspec(pagedef)
@@ -38,6 +38,8 @@ def get_content(pagedef):
         return agg.directory_archive(pagedef['directory'], output_type='archive')
     elif pagedef['type'] == 'directory_include':
         return agg.directory_archive(pagedef['directory'], output_type='include')
+    elif pagedef['type'] == 'page':
+        return None
 
 ########## interface ##########
 

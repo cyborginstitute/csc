@@ -2,12 +2,11 @@
 
 import yaml
 from cstools import expand_tree
-from cstools import DEFAULT_EXTENSION
 
 def parse_meta(input_page, yaml_extension='yaml'):
     return yaml.load(open(input_page.rsplit('.', 1)[0] + '.' + yaml_extension, 'r').read())
 
-def directory_archive(directory, output_type='archive', input_extension=DEFAULT_EXTENSION):
+def directory_archive(directory, output_type='archive'):
     file_list = expand_tree(directory)
     
     if output_type == 'archive':

@@ -21,8 +21,7 @@ def matcher(input_list, query=None):
         meta = expand_tree(input_list, 'yaml')
         corpus = {}
         for page in meta: 
-
-            dmeta = yaml.load(open(page, 'r')) 
+            dmeta = yaml.load(open(page, 'r'))
             if query['key'] in dmeta and dmeta[query['key']] is query['value']: 
                 pass 
             else:
