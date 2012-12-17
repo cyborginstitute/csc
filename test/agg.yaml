@@ -1,0 +1,7 @@
+# type = archive/include
+type: directory_archive
+preamble: this is the preamble
+postamble: this is the post-amble. lol.
+title: an aggregated page, created
+directory: test/
+---
