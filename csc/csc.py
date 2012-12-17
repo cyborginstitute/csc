@@ -68,7 +68,6 @@ def parse_file(filename, divider='---'):
             output['meta'] = meta_doc
             output['body'] = stream.split(divider)[1]
 
-    print output
     return output
 
 
