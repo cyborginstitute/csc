@@ -1,3 +1,0 @@
-{filename: test/agg2.rst, name: !!python/unicode 'an aggregated page, created', output: test/agg2.html,
-  template: test/page.tmpl, title: !!python/unicode 'an aggregated page, created',
-  type: page}

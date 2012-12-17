@@ -1,0 +1,7 @@
+title: 'this is a title'
+page: archive
+archive:
+  - input.rst
+  - shell-line-eding.rst
+preamble: "this is a bit of text and I think that its important to have text before the list."
+postamble: "this is text and it goes after the end of things."
