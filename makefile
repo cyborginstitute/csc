@@ -10,19 +10,19 @@ generated-pages = $(source-dir)/generated.spec
 .PHONY: all clean test
 
 content += $(subst .spec,.html,$(generated-pages))
-content += $(subst .yaml,.html,$(aggregated-pages))
+content += $(subst .agg,.html,$(aggregated-pages))
 content += $(subst .rst,.html,$(rendered-pages))
 
 all: $(content)
 
 clean:
-	-rm -f $(content) $(subst .spec,.yaml,$(generated-pages))
+	-rm -f $(content) $(subst .spec,.agg,$(generated-pages))
 
 %.html:%.rst
 	$(PYTHONBIN) $(bin-dir)/csc.py $< $@
 %.html:%.txt
 	$(PYTHONBIN) $(bin-dir)/csc.py $< $@
-%.yaml:%.spec
+%.agg:%.spec
 	$(PYTHONBIN) $(bin-dir)/csa.py $< $@
-%.txt:%.yaml
+%.txt:%.agg
 	$(PYTHONBIN) $(bin-dir)/csa.py $< $@
