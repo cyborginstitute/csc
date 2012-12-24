@@ -1,23 +1,37 @@
+############################################################
+#
+# User configuraiton values.
+
 PYTHONBIN = python2
 source-dir = test
+build-dir = build
 bin-dir = csc
 
+############################################################
+#
+# Defines page specifications. No configuration needed.
+
 rendered-pages = $(wildcard $(source-dir)/*.rst)
-aggregated-pages = $(source-dir)/agg.yaml $(source-dir)/agg2.yaml $(source-dir)/agg3.yaml
-generated-pages = $(source-dir)/generated.spec 
-
-.SECONDARY:
-.PHONY: all clean test
-
+aggregated-pages = $(widlcard $(source-dir)/*.agg)
+generated-pages = $(widlcard $(source-dir)/*.spec)
 content += $(subst .spec,.html,$(generated-pages))
 content += $(subst .agg,.html,$(aggregated-pages))
 content += $(subst .rst,.html,$(rendered-pages))
+output = $(subst $(source-dir),$(build-dir),$(content))
 
-all: $(content)
+############################################################
+#
+# 
 
+.SECONDARY:
+.PHONY: all clean
+
+all: $(output)
 clean:
-	-rm -f $(content) $(subst .spec,.agg,$(generated-pages))
+	-rm -fr $(build-dir)/*
 
+$(build-dir): 
+	mkdir -p $@
 %.html:%.rst
 	$(PYTHONBIN) $(bin-dir)/csc.py $< $@
 %.html:%.txt
