@@ -22,8 +22,10 @@ def matcher(input_list, query=None):
         corpus = {}
         for page in meta: 
             dmeta = yaml.load(open(page, 'r'))
-            if query['key'] in dmeta and dmeta[query['key']] is query['value']: 
-                pass 
+            if query['key'] in dmeta and (
+                    (dmeta[query['key']] is query['value']) or
+                    (query['value'] in dmeta[query['key']])):
+                pass
             else:
                 corpus[page.rsplit('.')[0] + '.rst'] = dmeta
 

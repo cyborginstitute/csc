@@ -47,8 +47,9 @@ def parse_document(filename, input, meta=None):
         meta.setdefault('subtitle', rst_output['subtitle'])
 
     output['content'] = rst_output['content']
+    output['meta'] = meta
 
-    return output, meta
+    return output
 
 def parse_file(filename, divider='---'):
     stream = open(filename, 'r').read()
@@ -84,9 +85,9 @@ class CscPage(object):
         self.filename_base = ''.join(self.filename.split('.', -1)[:-1])
         self.data = parse_file(self.filename)
 
-        source = parse_document(self.filename, self.data['body'])
-        self.document = source[0]
-        self.meta = source[1]
+        self.page = parse_document(self.filename, self.data['body'])
+        self.document = self.page['content']
+        self.meta = self.page['meta']
 
         if 'meta' in self.data:
             self.meta.update(self.data['meta'])
@@ -132,7 +133,6 @@ class CscPage(object):
         return r
 
     def render(self):
-        options = {}
         template_source = self.get_template()
 
         tmpl_parts = template_source.rsplit('/', 1)
@@ -144,8 +144,8 @@ class CscPage(object):
             tmpl_path = './'
             template = template_source
 
-        env = jinja2.Environment(loader=jinja2.FileSystemLoader(tmpl_path), **options)
-        tmpl = env.get_template(template).render(entry=self.document).encode('UTF-8')
+        env = jinja2.Environment(loader=jinja2.FileSystemLoader(tmpl_path))
+        tmpl = env.get_template(template).render(entry=self.page).encode('UTF-8')
 
         with open(self.output_file(), 'w') as f:
             f.write(tmpl)

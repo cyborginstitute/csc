@@ -21,20 +21,21 @@ output = $(subst $(source-dir),$(build-dir),$(content))
 
 ############################################################
 #
-# 
+#
 
 .SECONDARY:
 .PHONY: all clean
 
 all: $(output)
 clean:
-	-rm -fr $(build-dir)/*
+	-rm -rf $(build-dir)/*
+	-rm -rf $(source-dir)/*.yaml
 
-$(build-dir): 
+$(build-dir):
 	mkdir -p $@
-%.html:%.rst
+$(build-dir)/%.html:$(source-dir)/%.rst
 	$(PYTHONBIN) $(bin-dir)/csc.py $< $@
-%.html:%.txt
+$(build-dir)/%.html:%.txt
 	$(PYTHONBIN) $(bin-dir)/csc.py $< $@
 %.agg:%.spec
 	$(PYTHONBIN) $(bin-dir)/csa.py $< $@
