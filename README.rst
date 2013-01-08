@@ -42,7 +42,7 @@ Clone the ``csc`` repository (e.g. ``git clone
 git://github.com/cyborginstitute/csc.git``) and copy the ``csc/``
 directory and the ``makefile`` directory into a project directory.
 
-.. nnote::
+.. note::
 
    For most deployments, you will commit the ``csc`` code into your own
    project's repository and use ``csc`` *embedded* in your project.
