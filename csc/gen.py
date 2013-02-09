@@ -20,15 +20,22 @@ import yaml
 from cstools import expand_tree
 
 def filter_inputs(input_list, limit=None, sort=1):
-    if sort is 1:
-        input_list.sort(reverse=False)
-    elif sort is -1:
-        input_list.sort(reverse=True)
-
-    if limit is None:
-        return input_list
+    if limit is None or limit >= len(input_list):
+        if sort == 1:
+            return input_list.sort(reverse=False)
+        elif sort == -1:
+            return input_list.sort(reverse=True)
+    elif limit == 1: 
+        if sort is 1:
+            return input_list.min()
+        elif sort is -1:
+            return input_list.max()
     else:
-        return input_list[:limit]
+        import heapq
+        if sort is 1: 
+            return heapq.nsmallest(limit, input_list)
+        elif sort is -1:
+            return heapq.nlargest(limit, input_list)
 
 def matcher(input_list, query=None):
     if query is None:
